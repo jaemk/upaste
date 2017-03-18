@@ -1,4 +1,5 @@
-## upaste / hastebin / general pasting client
+## upaste
+> hastebin / general pasting client
 
 Simple client for uploading to hastebin.com or any site that accepts posting and viewing pastes
 
