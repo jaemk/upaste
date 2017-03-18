@@ -1,4 +1,4 @@
-#### hastebin / general pasting client
+## upaste / hastebin / general pasting client
 
 Simple client for uploading to hastebin.com or any site that accepts posting and viewing pastes
 
@@ -6,13 +6,13 @@ Simple client for uploading to hastebin.com or any site that accepts posting and
 ## Usage
 ```
 # simple
-cat file | rpaste
-rpaste -f <file>
+cat file | upaste
+upaste -f <file>
 
 # raw
-cat file | rpaste --raw
-rpaste --file <file> --raw
+cat file | upaste --raw
+upaste --file <file> --raw
 
 # custom paste/read locations
-rpaste --file <file> --paste-root https://hastebin.com/documents --read-root https://hastebin.com
+upaste --file <file> --paste-root https://hastebin.com/documents --read-root https://hastebin.com
 ```
