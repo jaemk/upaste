@@ -3,6 +3,14 @@
 
 Simple client for uploading to hastebin.com or any site that accepts posting and viewing pastes
 
+## Installation
+
+Static binary releases currently only exist for linux. See [releases](https://github.com/jaemk/upaste/releases).
+
+For installation on other platforms use cargo:
+```
+cargo install upaste
+```
 
 ## Usage
 ```
@@ -14,6 +22,7 @@ upaste -f <file>
 # raw
 cat file | upaste --raw
 upaste --file <file> --raw
+# ->  ** Success! Content available at: https://hastebin.com/raw/<some-key>
 
 # custom paste/read locations
 upaste --file <file> --paste-root https://hastebin.com/documents --read-root https://hastebin.com
@@ -27,7 +36,7 @@ upaste --pull <key> > <file>
  $ upaste --help
 
    upaste 0.2.0
-   James K. <james.kominick@gmail.com
+   James K. <james.kominick@gmail.com>
    
    ** CLI pasting client -- defaults to https://hastebin.com
    ** Reads from stdin or a specified file:

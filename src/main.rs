@@ -18,7 +18,7 @@ use errors::*;
 fn main() {
     let matches = App::new("upaste")
         .version(crate_version!())
-        .author("James K. <james.kominick@gmail.com")
+        .author("James K. <james.kominick@gmail.com>")
         .about(r##"
 ** CLI pasting client -- defaults to https://hastebin.com
 ** Reads from stdin or a specified file:
