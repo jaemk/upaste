@@ -1,4 +1,4 @@
-## upaste [![Build Status](https://travis-ci.org/jaemk/upaste.svg?branch=master)](https://travis-ci.org/jaemk/upaste)
+## upaste [![Build Status](https://travis-ci.org/jaemk/upaste.svg?branch=master)](https://travis-ci.org/jaemk/upaste) [![crates.io](https://img.shields.io/crates/v/upaste.svg)](https://crates.io/crates/upaste)
 > hastebin / general pasting client
 
 Simple client for uploading to hastebin.com or any site that accepts posting and viewing pastes
