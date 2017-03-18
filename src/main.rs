@@ -1,4 +1,4 @@
-extern crate clap;
+#[macro_use] extern crate clap;
 extern crate reqwest;
 extern crate serde_json;
 #[macro_use] extern crate error_chain;
@@ -17,7 +17,7 @@ use errors::*;
 
 fn main() {
     let matches = App::new("upaste")
-        .version("0.1.0")
+        .version(crate_version!())
         .author("James K. <james.kominick@gmail.com")
         .about(r##"
 ** CLI pasting client -- defaults to https://hastebin.com
@@ -29,6 +29,11 @@ fn main() {
                 .long("file")
                 .takes_value(true)
                 .help("file to upload"))
+        .arg(Arg::with_name("pull")
+                .short("p")
+                .long("pull")
+                .takes_value(true)
+                .help("pull an existing paste to stdout"))
         .arg(Arg::with_name("raw")
                 .short("r")
                 .long("raw")
@@ -68,7 +73,23 @@ fn run(matches: ArgMatches) -> Result<()> {
     let paste_root = matches.value_of("paste-root").unwrap_or("https://hastebin.com/documents");
     let read_root = matches.value_of("read-root").unwrap_or("https://hastebin.com");
 
-    // Get content to post. Either from a file or stdin
+    // Handle pulling down existing pastes
+    if let Some(existing_key) = matches.value_of("pull") {
+        let mut p = PathBuf::from(read_root);
+        p.push("raw");
+        p.push(existing_key);
+
+        let client = reqwest::Client::new().unwrap();
+        let mut resp = client.get(p.to_str().unwrap())
+                             .send()
+                             .chain_err(|| format!("Error sending request to: {}", p.display()))?;
+        let mut content = String::new();
+        let _ = resp.read_to_string(&mut content).unwrap();
+        println!("** {} **\n\n{}", p.display(), content);
+        return Ok(());
+    }
+
+    // Read in content to post. Either from a file or stdin
     let mut content = String::new();
     match matches.value_of("file") {
         Some(file_name) => {
@@ -97,7 +118,7 @@ fn run(matches: ArgMatches) -> Result<()> {
         format!("Error decoding response: {:?}", body)
     })?;
 
-    // Construct the url where our content is located
+    // Display the url where our content is located
     let key = resp["key"].to_string();
     let key = key.trim_matches('"');
     let raw = if matches.is_present("raw") { "raw" } else { "" };
