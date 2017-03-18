@@ -1,0 +1,10 @@
+[package]
+name = "upaste"
+version = "0.1.0"
+authors = ["James Kominick <james.kominick@gmail.com>"]
+
+[dependencies]
+clap = "2.19"
+reqwest = "0.4"
+error-chain = "0.7"
+serde_json = "0.9"
