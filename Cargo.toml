@@ -1,6 +1,6 @@
 [package]
 name = "upaste"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["James Kominick <james.kominick@gmail.com>"]
 description = "Simple cli pasting client for hastebin"
 repository = "https://github.com/jaemk/upaste"
@@ -14,3 +14,4 @@ clap = "2.19"
 reqwest = "0.4"
 error-chain = "0.7"
 serde_json = "0.9"
+itertools = "0.5"
