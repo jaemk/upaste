@@ -5,7 +5,7 @@ Simple client for uploading to hastebin.com or any site that accepts posting and
 
 ## Installation
 
-Static binary releases currently only exist for linux. See [releases](https://github.com/jaemk/upaste/releases).
+Binary releases available for linux & osx. See [releases](https://github.com/jaemk/upaste/releases).
 
 For installation on other platforms use cargo:
 ```
