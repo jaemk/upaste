@@ -55,11 +55,11 @@ fn main() {
         .arg(Arg::with_name("paste-root")
                 .long("paste-root")
                 .takes_value(true)
-                .help("Host url to upload to. Defaults to https://hastebin.com/documents"))
+                .help("Host url to upload to. Defaults to https://hastebin.com/documents or $UPASTE_PASTEROOT"))
         .arg(Arg::with_name("read-root")
                 .long("read-root")
                 .takes_value(true)
-                .help("Host url-root to use when linking to and pulling down posts. Defaults to https://hastebin.com/"))
+                .help("Host url-root to use when linking to and pulling down posts. Defaults to https://hastebin.com/ or $UPASTE_READROOT"))
         .get_matches();
 
     if let Err(ref e) = run(matches) {
