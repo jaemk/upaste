@@ -9,6 +9,7 @@ mod errors {
     error_chain! { }
 }
 
+use std::env;
 use std::io::{self, Read, BufReader, BufRead};
 use std::fs::File;
 use std::path::PathBuf;
@@ -163,8 +164,12 @@ fn read_input(matches: &ArgMatches) -> Result<String> {
 
 fn run(matches: ArgMatches) -> Result<()> {
     // Get url roots
-    let paste_root = matches.value_of("paste-root").unwrap_or("https://hastebin.com/documents");
-    let read_root = matches.value_of("read-root").unwrap_or("https://hastebin.com");
+    let paste_root_default = env::var("UPASTE_PASTEROOT")
+        .unwrap_or("https://hastebin.com/documents".into());
+    let read_root_default = env::var("UPASTE_READROOT")
+        .unwrap_or("https://hastebin.com".into());
+    let paste_root = matches.value_of("paste-root").unwrap_or(&paste_root_default);
+    let read_root = matches.value_of("read-root").unwrap_or(&read_root_default);
 
     // Handle pulling down existing pastes
     if let Some(existing_key) = matches.value_of("pull") {

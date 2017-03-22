@@ -28,6 +28,12 @@ upaste --file <file> --raw
 upaste --file <file> --paste-root https://hastebin.com/documents --read-root https://hastebin.com
 # ->  ** Success! Content available at: <read-root>/<some-key>
 
+# Or specify your alternate roots as ENV vars
+UPASTE_PASTEROOT=https://mypasteservice.com/new
+UPASTE_READROOT=https://mypasteservice.com
+upaste --file <file>
+# ->  ** Success! Content available at: <UPASTE_READROOT>/<some-key>
+
 # specifying a range of lines (start at line 15, read 30 lines)
 upaste --file <file> --start 15 --lines 30
 
