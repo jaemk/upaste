@@ -41,10 +41,11 @@ upaste --file <file> --start 15 --lines 30
 upaste --pull <key> > <file>
 ```
 
+##
 ```
  $ upaste -h
 
-   upaste 0.2.1
+   upaste 0.2.2
    James K. <james.kominick@gmail.com>
    
    ** CLI pasting client -- defaults to https://hastebin.com
@@ -63,8 +64,9 @@ upaste --pull <key> > <file>
    OPTIONS:
        -f, --file <file>                file to upload
        -l, --lines <lines>              number of lines to read
-           --paste-root <paste-root>    Host url to upload to. Defaults to https://hastebin.com/documents
+           --paste-root <paste-root>    Host url to upload to. Defaults to https://hastebin.com/documents or $UPASTE_PASTEROOT
        -p, --pull <pull>                pull an existing paste to stdout
-           --read-root <read-root>      Host url-root to use when linking to and pulling down posts. Defaults to https://hastebin.com/
+           --read-root <read-root>      Host url-root to use when linking to and pulling down posts. Defaults to https://hastebin.com/ or
+                                        $UPASTE_READROOT
        -s, --start <start>              line number to start reading at (1 being the first)
 ```
