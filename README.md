@@ -1,7 +1,7 @@
 ## upaste [![Build Status](https://travis-ci.org/jaemk/upaste.svg?branch=master)](https://travis-ci.org/jaemk/upaste) [![crates.io](https://img.shields.io/crates/v/upaste.svg)](https://crates.io/crates/upaste)
-> hastebin / general pasting client
+> paste.rs / hastebin / general pasting client
 
-Simple client for uploading to hastebin.com or any site that accepts posting and viewing pastes
+Simple client for uploading to paste.rs, hastebin.com, or any site that accepts posting and viewing pastes
 
 ## Installation
 
@@ -29,8 +29,8 @@ upaste --file <file> --paste-root https://hastebin.com/documents --read-root htt
 # ->  ** Success! Content available at: <read-root>/<some-key>
 
 # Or specify your alternate roots as ENV vars
-UPASTE_PASTEROOT=https://mypasteservice.com/new
-UPASTE_READROOT=https://mypasteservice.com
+UPASTE_PASTEROOT=https://paste.rs
+UPASTE_READROOT=https://paste.rs
 upaste --file <file>
 # ->  ** Success! Content available at: <UPASTE_READROOT>/<some-key>
 
@@ -39,34 +39,4 @@ upaste --file <file> --start 15 --lines 30
 
 # pulling existing paste into file
 upaste --pull <key> > <file>
-```
-
-##
-```
- $ upaste -h
-
-   upaste 0.2.2
-   James K. <james.kominick@gmail.com>
-   
-   ** CLI pasting client -- defaults to https://hastebin.com
-   ** Reads from stdin or a specified file:
-      >> cat file.txt | upaste
-      >> upaste -f file.txt
-   
-   USAGE:
-       upaste [FLAGS] [OPTIONS]
-   
-   FLAGS:
-       -h, --help       Prints help information
-       -r, --raw        return link to raw version
-       -V, --version    Prints version information
-   
-   OPTIONS:
-       -f, --file <file>                file to upload
-       -l, --lines <lines>              number of lines to read
-           --paste-root <paste-root>    Host url to upload to. Defaults to https://hastebin.com/documents or $UPASTE_PASTEROOT
-       -p, --pull <pull>                pull an existing paste to stdout
-           --read-root <read-root>      Host url-root to use when linking to and pulling down posts. Defaults to https://hastebin.com/ or
-                                        $UPASTE_READROOT
-       -s, --start <start>              line number to start reading at (1 being the first)
 ```

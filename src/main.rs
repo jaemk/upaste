@@ -13,6 +13,7 @@ use std::env;
 use std::io::{self, Read, BufReader, BufRead};
 use std::fs::File;
 use std::path::PathBuf;
+use std::ffi::OsStr;
 use clap::{Arg, App, ArgMatches};
 use serde_json::Value;
 use itertools::Itertools;
@@ -85,7 +86,6 @@ fn main() {
 /// Pull down content from `read_root` associated with a given key
 fn pull_content(read_root: &str, key: &str) -> Result<(String, PathBuf)> {
     let mut p = PathBuf::from(read_root);
-    p.push("raw");
     p.push(key);
 
     let client = reqwest::Client::new().unwrap();
@@ -106,6 +106,19 @@ fn post_content(paste_root: &str, read_root: &str, content: &str, raw: bool) -> 
                          .body(content)
                          .send()
                          .chain_err(|| format!("Error sending info to: {}", paste_root))?;
+
+    // work with paste.rs
+    if paste_root.starts_with("https://paste.rs") {
+        let mut content = String::new();
+        let _ = resp.read_to_string(&mut content).unwrap();
+        let path = PathBuf::from(&content);
+        let key = path.file_name()
+            .and_then(OsStr::to_str)
+            .expect("Error converting to String");
+        let mut url = PathBuf::from("https://paste.rs/");
+        url.push(key);
+        return Ok(url)
+    }
     let resp: Value = resp.json().chain_err(|| {
         let mut body = String::new();
         let _ = resp.read_to_string(&mut body).unwrap();
@@ -167,7 +180,7 @@ fn run(matches: ArgMatches) -> Result<()> {
     let paste_root_default = env::var("UPASTE_PASTEROOT")
         .unwrap_or("https://hastebin.com/documents".into());
     let read_root_default = env::var("UPASTE_READROOT")
-        .unwrap_or("https://hastebin.com".into());
+        .unwrap_or("https://hastebin.com/raw".into());
     let paste_root = matches.value_of("paste-root").unwrap_or(&paste_root_default);
     let read_root = matches.value_of("read-root").unwrap_or(&read_root_default);
 
