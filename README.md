@@ -3,6 +3,8 @@
 
 Simple client for uploading to paste.rs, hastebin.com, or any site that accepts posting and viewing pastes
 
+Also see the personal server [upaste-server](https://github.com/jaemk/upaste-server) and the companion vim-plugin [vim-upaste](https://github.com/jaemk/vim-upaste)
+
 ## Installation
 
 Binary releases available for linux & osx. See [releases](https://github.com/jaemk/upaste/releases).
