@@ -63,6 +63,16 @@ fn main() {
                 .help("Host url-root to use when linking to and pulling down posts. Defaults to https://hastebin.com/ or $UPASTE_READROOT"))
         .get_matches();
 
+    #[cfg(target_os="linux")]
+    {
+        if env::var_os("SSL_CERT_FILE").is_none() {
+            env::set_var("SSL_CERT_FILE", "/etc/ssl/certs/ca-certificates.crt");
+        }
+        if env::var_os("SSL_CERT_DIR").is_none() {
+            env::set_var("SSL_CERT_DIR", "/etc/ssl/certs");
+        }
+    }
+
     if let Err(ref e) = run(matches) {
         use ::std::io::Write;
         let stderr = &mut ::std::io::stderr();
