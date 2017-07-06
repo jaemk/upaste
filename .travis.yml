@@ -5,9 +5,15 @@ language: rust
 services: docker
 sudo: required
 
+addons:
+    apt:
+        packages:
+            - libssl-dev
+
 env:
     global:
         - CRATE_NAME=upaste
+        - OPENSSL_STATIC=1
 
 matrix:
     allow_failures:
