@@ -84,17 +84,16 @@ fn main() {
 
 
 /// Pull down content from `read_root` associated with a given key
-fn pull_content(read_root: &str, key: &str) -> Result<(String, PathBuf)> {
-    let mut p = PathBuf::from(read_root);
-    p.push(key);
+fn pull_content(mut read_root: PathBuf, key: &str) -> Result<(String, PathBuf)> {
+    read_root.push(key);
 
     let client = reqwest::Client::new().unwrap();
-    let mut resp = client.get(p.to_str().unwrap())
+    let mut resp = client.get(read_root.to_str().unwrap())
                          .send()
-                         .chain_err(|| format!("Error sending request to: {}", p.display()))?;
+                         .chain_err(|| format!("Error sending request to: {}", read_root.display()))?;
     let mut content = String::new();
     let _ = resp.read_to_string(&mut content).unwrap();
-    Ok((content, p))
+    Ok((content, read_root))
 }
 
 
@@ -180,12 +179,14 @@ fn run(matches: ArgMatches) -> Result<()> {
     let paste_root_default = env::var("UPASTE_PASTEROOT")
         .unwrap_or("https://hastebin.com/documents".into());
     let read_root_default = env::var("UPASTE_READROOT")
-        .unwrap_or("https://hastebin.com/raw".into());
+        .unwrap_or("https://hastebin.com".into());
     let paste_root = matches.value_of("paste-root").unwrap_or(&paste_root_default);
     let read_root = matches.value_of("read-root").unwrap_or(&read_root_default);
 
     // Handle pulling down existing pastes
     if let Some(existing_key) = matches.value_of("pull") {
+        let read_root = PathBuf::from(read_root);
+        let read_root = if read_root.starts_with("https://paste.rs") { read_root } else { read_root.join("raw") };
         let (content, url) = pull_content(read_root, existing_key)
             .chain_err(|| format!("Error pulling content for key: {}", existing_key))?;
         println!("** {} **\n\n{}", url.display(), content);
