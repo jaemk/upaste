@@ -2,24 +2,27 @@
 
 #[macro_use] extern crate clap;
 #[macro_use] extern crate error_chain;
+extern crate serde;
+#[macro_use] extern crate serde_derive;
+extern crate serde_json;
 extern crate itertools;
 extern crate reqwest;
-extern crate serde_json;
+extern crate url;
 
 error_chain! {
     foreign_links {
         Reqwest(reqwest::Error);
+        Io(std::io::Error);
+        Url(url::ParseError);
     }
 }
 
 use std::env;
 use std::io::{self, Read, BufReader, BufRead};
 use std::fs::File;
-use std::path::PathBuf;
-use std::ffi::OsStr;
 use clap::{Arg, App, ArgMatches};
-use serde_json::Value;
 use itertools::Itertools;
+use url::Url;
 
 
 quick_main!(run);
@@ -88,11 +91,11 @@ fn run() -> Result<()> {
 
     // Handle pulling down existing pastes
     if let Some(existing_key) = matches.value_of("pull") {
-        let read_root = PathBuf::from(read_root);
-        let read_root = if read_root.starts_with("https://paste.rs") { read_root } else { read_root.join("raw") };
+        let read_root = Url::parse(read_root)?;
+        let read_root = if read_root.as_str().starts_with("https://paste.rs") { read_root } else { read_root.join("raw")? };
         let (content, url) = pull_content(read_root, existing_key)
             .chain_err(|| format!("Error pulling content for key: {}", existing_key))?;
-        println!("** {} **\n\n{}", url.display(), content);
+        println!("** {} **\n\n{}", url, content);
         return Ok(())
     }
 
@@ -102,60 +105,55 @@ fn run() -> Result<()> {
     // Post content
     let url = post_content(paste_root, read_root, &content, matches.is_present("raw"))
         .chain_err(|| format!("Error posting content to: {}", paste_root))?;
-    println!(" ** Success! Content available at: {}", url.display());
+    println!(" ** Success! Content available at: {}", url);
     Ok(())
 }
 
 
 /// Pull down content from `read_root` associated with a given key
-fn pull_content(mut read_root: PathBuf, key: &str) -> Result<(String, PathBuf)> {
-    read_root.push(key);
+fn pull_content(read_root: Url, key: &str) -> Result<(String, Url)> {
+    let read_root = read_root.join(key)?;
 
     let client = reqwest::Client::new();
-    let mut resp = client.get(read_root.to_str().unwrap())
+    let mut resp = client.get(read_root.as_str())
                          .send()
-                         .chain_err(|| format!("Error sending request to: {}", read_root.display()))?;
+                         .chain_err(|| format!("Error sending request to: {}", read_root))?;
     let mut content = String::new();
-    let _ = resp.read_to_string(&mut content).unwrap();
+    let _ = resp.read_to_string(&mut content)?;
     Ok((content, read_root))
 }
 
 
+#[derive(Debug, Clone, Deserialize)]
+struct PostResponse {
+    key: String,
+}
+
 /// Post content to `paste_root` and return a url to where we can view it.
 /// Url returned is constructed with respect to `read_root` and `raw`.
-fn post_content(paste_root: &str, read_root: &str, content: &str, raw: bool) -> Result<PathBuf> {
+fn post_content(paste_root: &str, read_root: &str, content: &str, raw: bool) -> Result<Url> {
     let client = reqwest::Client::new();
     let mut resp = client.post(paste_root)
                          .body(content.to_owned())
-                         .send()?;
+                         .send()?
+                         .error_for_status()?;
 
-    // work with paste.rs
+    let mut content = String::new();
+    resp.read_to_string(&mut content)?;
+
+    // paste.rs returns key in the body
     if paste_root.starts_with("https://paste.rs") {
-        let mut content = String::new();
-        let _ = resp.read_to_string(&mut content).unwrap();
-        let path = PathBuf::from(&content);
-        let key = path.file_name()
-            .and_then(OsStr::to_str)
-            .expect("Error converting to String");
-        let mut url = PathBuf::from("https://paste.rs/");
-        url.push(key);
-        return Ok(url)
+        Ok(Url::parse(&content)?)
+    } else {
+        // everything returns key in json
+        // body has already been read into content
+        let resp = serde_json::from_str::<PostResponse>(&content)
+            .chain_err(|| format!("Failed parsing: {:?}", content))?;
+        let key = resp.key.trim_matches('"');
+        let url = Url::parse(read_root)?;
+        let url = if raw { url.join("raw")? } else { url };
+        Ok(url.join(key)?)
     }
-    let resp: Value = resp.json().chain_err(|| {
-        let mut body = String::new();
-        let _ = resp.read_to_string(&mut body).unwrap();
-        format!("Error decoding response: {:?}", body)
-    })?;
-
-    // build the url where our content is located
-    let key = resp["key"].to_string();
-    let key = key.trim_matches('"');
-    let raw = if raw { "raw" } else { "" };
-
-    let mut p = PathBuf::from(read_root);
-    p.push(raw);
-    p.push(key);
-    Ok(p)
 }
 
 
