@@ -1,6 +1,6 @@
 [package]
 name = "upaste"
-version = "0.2.5"
+version = "0.2.6"
 authors = ["James Kominick <james.kominick@gmail.com>"]
 description = "Simple cli pasting client for paste.rs, hastebin, or any general pasting service"
 repository = "https://github.com/jaemk/upaste"
