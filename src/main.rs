@@ -1,12 +1,15 @@
 #![recursion_limit = "1024"]
 
 #[macro_use] extern crate clap;
+#[macro_use] extern crate error_chain;
 extern crate itertools;
 extern crate reqwest;
 extern crate serde_json;
-#[macro_use] extern crate error_chain;
-mod errors {
-    error_chain! { }
+
+error_chain! {
+    foreign_links {
+        Reqwest(reqwest::Error);
+    }
 }
 
 use std::env;
@@ -17,10 +20,12 @@ use std::ffi::OsStr;
 use clap::{Arg, App, ArgMatches};
 use serde_json::Value;
 use itertools::Itertools;
-use errors::*;
 
 
-fn main() {
+quick_main!(run);
+
+
+fn run() -> Result<()> {
     let matches = App::new("upaste")
         .version(crate_version!())
         .author("James K. <james.kominick@gmail.com>")
@@ -73,23 +78,32 @@ fn main() {
         }
     }
 
-    if let Err(ref e) = run(matches) {
-        use ::std::io::Write;
-        let stderr = &mut ::std::io::stderr();
-        let stderr_msg = "Error writing to stderr";
-        writeln!(stderr, "error: {}", e).expect(stderr_msg);
+    // Get url roots
+    let paste_root_default = env::var("UPASTE_PASTEROOT")
+        .unwrap_or("https://hastebin.com/documents".into());
+    let read_root_default = env::var("UPASTE_READROOT")
+        .unwrap_or("https://hastebin.com".into());
+    let paste_root = matches.value_of("paste-root").unwrap_or(&paste_root_default);
+    let read_root = matches.value_of("read-root").unwrap_or(&read_root_default);
 
-        for e in e.iter().skip(1) {
-            writeln!(stderr, "caused by: {}", e).expect(stderr_msg);
-        }
-
-        // `RUST_BACKTRACE=1`
-        if let Some(backtrace) = e.backtrace() {
-            writeln!(stderr, "backtrace: {:?}", backtrace).expect(stderr_msg);
-        }
-
-        ::std::process::exit(1);
+    // Handle pulling down existing pastes
+    if let Some(existing_key) = matches.value_of("pull") {
+        let read_root = PathBuf::from(read_root);
+        let read_root = if read_root.starts_with("https://paste.rs") { read_root } else { read_root.join("raw") };
+        let (content, url) = pull_content(read_root, existing_key)
+            .chain_err(|| format!("Error pulling content for key: {}", existing_key))?;
+        println!("** {} **\n\n{}", url.display(), content);
+        return Ok(())
     }
+
+    // Read in content to post. Either from a file or stdin
+    let content = read_input(&matches).chain_err(|| "Error reading input")?;
+
+    // Post content
+    let url = post_content(paste_root, read_root, &content, matches.is_present("raw"))
+        .chain_err(|| format!("Error posting content to: {}", paste_root))?;
+    println!(" ** Success! Content available at: {}", url.display());
+    Ok(())
 }
 
 
@@ -97,7 +111,7 @@ fn main() {
 fn pull_content(mut read_root: PathBuf, key: &str) -> Result<(String, PathBuf)> {
     read_root.push(key);
 
-    let client = reqwest::Client::new().unwrap();
+    let client = reqwest::Client::new();
     let mut resp = client.get(read_root.to_str().unwrap())
                          .send()
                          .chain_err(|| format!("Error sending request to: {}", read_root.display()))?;
@@ -110,11 +124,10 @@ fn pull_content(mut read_root: PathBuf, key: &str) -> Result<(String, PathBuf)> 
 /// Post content to `paste_root` and return a url to where we can view it.
 /// Url returned is constructed with respect to `read_root` and `raw`.
 fn post_content(paste_root: &str, read_root: &str, content: &str, raw: bool) -> Result<PathBuf> {
-    let client = reqwest::Client::new().unwrap();
+    let client = reqwest::Client::new();
     let mut resp = client.post(paste_root)
-                         .body(content)
-                         .send()
-                         .chain_err(|| format!("Error sending info to: {}", paste_root))?;
+                         .body(content.to_owned())
+                         .send()?;
 
     // work with paste.rs
     if paste_root.starts_with("https://paste.rs") {
@@ -153,12 +166,13 @@ fn read<T: BufRead>(reader: T, lines_to_skip: usize, lines_to_read: Option<&str>
     let mut lines = reader.lines().map(|l| l.unwrap_or("".into())).skip(lines_to_skip);
     Ok(match lines_to_read {
         Some(n_lines) => {
-            let n = n_lines.parse::<usize>().chain_err(|| format!("Invalid lines param: {}", n_lines))?;
+            let n = n_lines.parse::<usize>().chain_err(|| format!("Invalid lines param: {}, expected int", n_lines))?;
             lines.take(n).join("\n")
         }
         None => lines.join("\n"),
     })
 }
+
 
 /// Read content from either a specified file or from stdin into a String.
 /// If `start` is specified, start reading at line number `start`.
@@ -166,7 +180,7 @@ fn read<T: BufRead>(reader: T, lines_to_skip: usize, lines_to_read: Option<&str>
 fn read_input(matches: &ArgMatches) -> Result<String> {
     let start = matches.value_of("start").unwrap_or("1");
     let lines_to_skip = start.parse::<usize>()
-        .chain_err(|| format!("Invalid start param: {}", start))? - 1;
+        .chain_err(|| format!("Invalid start param: {}, expected int", start))? - 1;
     let lines_to_read = matches.value_of("lines");
 
     match matches.value_of("file") {
@@ -181,35 +195,5 @@ fn read_input(matches: &ArgMatches) -> Result<String> {
             read(std_buf, lines_to_skip, lines_to_read)
         }
     }
-}
-
-
-fn run(matches: ArgMatches) -> Result<()> {
-    // Get url roots
-    let paste_root_default = env::var("UPASTE_PASTEROOT")
-        .unwrap_or("https://hastebin.com/documents".into());
-    let read_root_default = env::var("UPASTE_READROOT")
-        .unwrap_or("https://hastebin.com".into());
-    let paste_root = matches.value_of("paste-root").unwrap_or(&paste_root_default);
-    let read_root = matches.value_of("read-root").unwrap_or(&read_root_default);
-
-    // Handle pulling down existing pastes
-    if let Some(existing_key) = matches.value_of("pull") {
-        let read_root = PathBuf::from(read_root);
-        let read_root = if read_root.starts_with("https://paste.rs") { read_root } else { read_root.join("raw") };
-        let (content, url) = pull_content(read_root, existing_key)
-            .chain_err(|| format!("Error pulling content for key: {}", existing_key))?;
-        println!("** {} **\n\n{}", url.display(), content);
-        return Ok(())
-    }
-
-    // Read in content to post. Either from a file or stdin
-    let content = read_input(&matches).chain_err(|| "Error reading input")?;
-
-    // Post content
-    let url = post_content(paste_root, read_root, &content, matches.is_present("raw"))
-        .chain_err(|| format!("Error posting content to: {}", paste_root))?;
-    println!(" ** Success! Content available at: {}", url.display());
-    Ok(())
 }
 
