@@ -18,6 +18,7 @@ error_chain! {
 }
 
 use std::env;
+use std::path;
 use std::io::{self, Read, BufReader, BufRead};
 use std::fs::File;
 use clap::{Arg, App, ArgMatches};
@@ -91,9 +92,9 @@ fn run() -> Result<()> {
 
     // Handle pulling down existing pastes
     if let Some(existing_key) = matches.value_of("pull") {
-        let read_root = Url::parse(read_root)?;
-        let read_root = if read_root.as_str().starts_with("https://paste.rs") { read_root } else { read_root.join("raw")? };
-        let (content, url) = pull_content(read_root, existing_key)
+        let read_root_p = path::PathBuf::from(read_root);
+        let read_root_p = if read_root.starts_with("https://paste.rs") { read_root_p } else { read_root_p.join("raw") };
+        let (content, url) = pull_content(&read_root_p, existing_key)
             .chain_err(|| format!("Error pulling content for key: {}", existing_key))?;
         println!("** {} **\n\n{}", url, content);
         return Ok(())
@@ -111,8 +112,8 @@ fn run() -> Result<()> {
 
 
 /// Pull down content from `read_root` associated with a given key
-fn pull_content(read_root: Url, key: &str) -> Result<(String, Url)> {
-    let read_root = read_root.join(key)?;
+fn pull_content(read_root: &path::Path, key: &str) -> Result<(String, Url)> {
+    let read_root = Url::parse(read_root.join(key).to_str().expect("invalid path"))?;
 
     let client = reqwest::Client::new();
     let mut resp = client.get(read_root.as_str())
@@ -150,9 +151,9 @@ fn post_content(paste_root: &str, read_root: &str, content: &str, raw: bool) -> 
         let resp = serde_json::from_str::<PostResponse>(&content)
             .chain_err(|| format!("Failed parsing: {:?}", content))?;
         let key = resp.key.trim_matches('"');
-        let url = Url::parse(read_root)?;
-        let url = if raw { url.join("raw")? } else { url };
-        Ok(url.join(key)?)
+        let url = path::PathBuf::from(read_root);
+        let url = if raw { url.join("raw") } else { url };
+        Ok(Url::parse(url.join(key).to_str().expect("invalid path"))?)
     }
 }
 
